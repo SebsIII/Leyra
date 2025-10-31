@@ -1,0 +1,1 @@
+#This script gathers data from the weather system 
