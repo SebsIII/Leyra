@@ -3,6 +3,7 @@
 import requests
 import datetime
 import json
+import time
 
 IPA = "192.168.1.200"
 
@@ -10,26 +11,31 @@ def formatRawData(data):
     data = [data["Data"]["Temperature"], data["Data"]["Pressure"], data["Data"]["RainLevel"], data["Data"]["ApproxAltitude"], data["Millis"]]
     return data
 
-response = requests.get("http://" + IPA)
-dataArray = formatRawData(response.json())
+def getAndSave():
+    response = requests.get("http://" + IPA)
+    dataArray = formatRawData(response.json())
 
-time = datetime.datetime.now()
-with open("../Playground/DataPack1.json", "r+") as f:
-    file_data = json.load(f)
-    file_data["Data"].update(dataArray)
-    f.seek(0)
-    json.dump(file_data, f, indent=4)
+    day = datetime.datetime.now().strftime("%d-%m-%y")
+    try: 
+        time = datetime.datetime.now().strftime("%H:%M ")
+        with open(f"../Playground/{day}.json", "x+") as file:
+            file.write("{\n}")
+            file.seek(0)
+            file_data = json.load(file)
+            file_data["DaysPassed"] = response.json()["DaysPassed"]
+            file_data[str(time)] = dataArray
+            file.seek(0)
+            json.dump(file_data, file, indent=4)
 
-#{
-#"Data": {
-#  "Temperature":28.09,
-#  "Pressure":101234.47,
-#  "ApproxAltitude":7.54,
-#  "RainLevel":0.00
-#},
-#"Millis":277042,
-#"DaysPassed":0,
-#"IWSmessage":"All clear."
-#}
+    except FileExistsError:
+        with open(f"../Playground/{day}.json", "r+") as file:
+            file_data = json.load(file)
+            file_data[str(time)] = dataArray
+            file.seek(0)
+            json.dump(file_data, file, indent=4)
 
+print("Starting Polling...")
+while True:
+    getAndSave()
+    time.sleep(180)
 
